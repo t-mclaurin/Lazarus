@@ -24,6 +24,7 @@ Lazarus requires 4 pieces of input to work
 1. A Boolean search string that describes the SRA entries relevant to your search
 (eg "freshwater metagenome AND united kingdom")
 2. A reference name for that search (eg "freshwater")
+
 Target species by binomial name in two lists:
 3. A list of species known to have publicly available reference genomes
 (taxids_with
