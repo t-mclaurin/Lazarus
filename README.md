@@ -17,7 +17,9 @@ mkdir lazarus/data
 mkdir lazarus/scripts
 ```
 The pipeline is designed for commands to be run from the /scripts directory. 
-
+```
+cd lazarus/scripts
+```
 ## Input
 
 Lazarus requires 4 pieces of input to work
