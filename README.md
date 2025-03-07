@@ -89,6 +89,8 @@ shuf -n 20 ../data/freshwater.txt > ../data/short_freshwater.txt
 ### Running Search. 
 This script finds, downloads, sketches, searches-in and then deletes each SRA entry in a list. 
 It will output the the accession ID and results for each search to a csv file called output.csv
+The accessions listed in the file that you names "file_name" (something like "file_name_short" if 
+you used the shuf function above) needs to be changed to match
 The soumrash database made before (ie our_database) needs to be named in the second to last line 
 ```
 sbatch run_search_v2.sh
