@@ -86,7 +86,7 @@ To test: Once you have this list, you can retreive a random subsample with which
 shuf -n 20 ../data/freshwater.txt > ../data/short_freshwater.txt
 ```
 
-### Running Search. 
+### Running Search. - CPU and memory efficient option
 This script finds, downloads, sketches, searches-in and then deletes each SRA entry in a list. 
 It will output the the accession ID and results for each search to a csv file called output.csv
 The accessions listed in the file that you names "file_name" (something like "file_name_short" if 
@@ -95,6 +95,33 @@ The soumrash database made before (ie our_database) needs to be named in the sec
 ```
 sbatch run_search_v2.sh
 ```
+### Running Search - Faster and re-usable option
+These two scripts 1) download and process all the SRA samples listed into a directory and then 2) runs gather on each and outputs the results.
+They have been parallelised and run considerably quicker than the previous option. 
+```
+mkdir ../data/freshwater_sigs
+```
+
+
+First we ensure we have no repeats of SRA entreis already downloaded. 
+```
+comm -23 <(sort ../data/freshwater.txt) <(ls ../data/freshwater_sigs/*.sig | sed 's#.*/##; s/\.sig//g' | sort) > ../data/freshwater_new.txt
+```
+Then we run the download. The number of jobs needs to be set to equalthe number of accessions being downloaded, and the number of jobs at once should be kept relatively low so as not to overwhelm the SRA. 
+```
+wc -l ../data/freshwater_new.txt 
+sbatch nano preget_samples_p.sh
+```
+Then we run the search. The number of jobs needs to be set to to equal the number of signatures in the target directory.
+```
+ls ../data/freshwater_sigs/ | wc -l
+sbatch run_search_v5.sh
+```
+ The outputs are created seperately in order to prevent results from bieng misattributed due to a race condition, and so need to be combined at the end:
+ ```
+cat ../data/outputs/output_*.csv > output.csv
+```
+
 
 ### Formatting the output
 The output.csv file is in a human readable oriented format, and needs to be made into a true csv. This is done by running the code below in the command line. (script coming soon)
