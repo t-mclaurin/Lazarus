@@ -4,7 +4,7 @@
 available metagenomic and environmental samples. It is robust to the varying levels of
 reference material for target species and to the growing datasets available to search.
 
-##Contents 
+## Contents 
  - [Setup](#setup)
  - [Input](#input)
  - [Steps](#steps)
@@ -110,7 +110,7 @@ comm -23 <(sort ../data/freshwater.txt) <(ls ../data/freshwater_sigs/*.sig | sed
 Then we run the download. The number of jobs needs to be set to equalthe number of accessions being downloaded, and the number of jobs at once should be kept relatively low so as not to overwhelm the SRA. 
 ```
 wc -l ../data/freshwater_new.txt 
-sbatch nano preget_samples_p.sh
+sbatch preget_samples_p.sh
 ```
 Then we run the search. The number of jobs needs to be set to to equal the number of signatures in the target directory.
 ```
