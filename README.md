@@ -4,11 +4,35 @@
 available metagenomic and environmental samples. It is robust to the varying levels of
 reference material for target species and to the growing datasets available to search.
 
+This work was undertaken as a Master's Project. The full transcirpt to the thesis can be found /here/
+
+Abstract:
+
+In short: Lazarus is a bioinformatics pipline capable of...
+
+
 ## Contents 
+
+ - [Dependencies](#dependcies)
+ - [Tutorial](#tutorial)
  - [Setup](#setup)
  - [Input](#input)
  - [Steps](#steps)
  - [Output](#output)
+
+### Dependencies
+All of these are avialable via the bioconda channel of the conda software manager unless stated otherwise. 
+In chronological order of necessity:
+1. NCBI Datasets Command Line Interface
+2. 
+
+# Tutorial
+This tutorial aims to guide users new to both this pipeline and to Bioinformatics software in general through the steps to undertake thierr own 
+searches. Although steps have been taken to make this process as user friendly as posssible, this is not a finsihed and polished piece of software. 
+
+Additionally, there are cases where the process is specific to the working environment of the original developer. This notabley includes variables set for SLURM resource allocation and the use of privately shared databases. This code is intended primarly for contemporaries and sucessors to the project. Cases where this inpacts out-of-the-box use is addressed throughout the tutorial. 
+
+General trends: scripts are named starting with verbs, files are overwritten by scripts, Erorr and Output files are the same name as scripts but with .err and .out repectively, variables in scripts need to be edited in the scripts directly and rarely if ever take arguments from the command line.  
 
 ## Setup
 You will need two directories: scripts and data.
@@ -26,16 +50,18 @@ Lazarus requires 4 pieces of input to work
 1. A Boolean search string that describes the SRA entries relevant to your search
 (eg "freshwater metagenome AND united kingdom")
 2. A reference name for that search (eg "freshwater")
-3. Target species by binomial name in two lists: A list of species known to have publicly available reference genomes
-(taxids_with)
-4. A list of species known **not** to have publicly available reference genomes
+3. A list of species of interest by scientific name
 
-## Steps - Sourmash
-#### Converting to Taxonomic ID from Binomial name
-This script takes a list of species binomial names. (../data/species_list.txt). It expects the names line
-deliniated, the same as copy and pasting from an excel file. 
+## Steps - Building a sourmash database
+
+Our sourmash database is made up genomic informaation form one of three sources: Species of interest, thier relatives and posotive controls. 
+The Sourmash gather function that we use in this search improves in sensitivity with genomic information from wider sources at it's disposale
+
+#### Finding publicly available genomic information
+This script takes a list of species binomial names in (../data/species.txt). It expects the names line
+deliniated, the same as copy and pasting from an excel file column. Eg:
 ```
-nano ../data/species_list.txt
+nano ../data/species.txt
 ```
 ```
 Bufo bufo
@@ -45,19 +71,36 @@ Schoenoplectus triqueter
 Sympetrum striolatum
 Margaritifera margaritifera
 ```
-The point of this step is to check the names of the species are identifiied correctly 
-and to work with ncbis ID system from then on. 
-This script needs to be run twice, with the output files to be changed to:
+In order to run this script we need the NCBI datasets software. 
 ```
-taxids_with.txt
-taxids_without.txt
+sbatch check_refgens.sh
 ```
-The script is:
+This outputs two files:
 ```
-sbatch get_taxids.sh
+../data/refgen_species.tsv
+../data/refgen_family.tsv
 ```
+The first is all the avaiable genome sequences and the second is all the available genome sequences for species in the same Family. Species and Families that are searched for but don't return any reults are described as None in the accession and assembly_level columns. 
 
-#### Creating sourmash signatures from complete reference genomes. 
+It is important to note that target species not found are knwon unknowns, but members of the target species' family that don't have reference genomes are unknown unknowns. Entire Genuses could fit into this catagory and undermine our assumption that we have properly represented relatives to our targets. 
+
+#### Choosing entries to your database.
+Which species and how many genomes go into your database is a trade off between sensitivty and run time, all underscored by the availability of genomic information. 
+A script that collates on recommendations from previous testing is in the works. For now the selection process is limited. 
+ 
+These scriptt take the highest assembly level genome for each species from only refgen_species, and from both refgen_species and refgen_family
+```
+sbatch select_one_species.sh
+sbatch select_one.sh
+```
+The best relatives to have in the database are ones most likely to have actually been sampled in your field
+of metagenomes. As such manually selecting the relatives you are most likly to encounter is the best.
+Species of interest can be easily noted by their binomial name in the search column. 
+A rule of thumb is that it takes ... to downlaod ... genomes. 
+
+#### Extracting 
+
+### Creating sourmash signatures from  
 This requires the file "taxids_with.txt". It outputs sketched signatures to the signatures sub-directory of the data directory. 
 It also requires the ncbi_datasets conda package activated. 
 ```
@@ -139,6 +182,8 @@ NF >= 5 {
 ' output.csv > formatted_output.csv
 
 ```
+This is also the time to do find and replace with the refgen_summary.csv file. 
+
 ## Steps - R
 
 With the downloaded formatted_output we can now make some maps and summary statistics. 
