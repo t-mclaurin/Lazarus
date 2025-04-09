@@ -9,10 +9,10 @@ set -e
 set -u
 set -o pipefail
 
-text='freshwater metagenome AND united kingdom'
-file_name='freshwater'
+text='marine  metagenome AND united kingdom'
+file_name='marine'
 #Has this file been made before, and so this is an update? (true or false)
-update=true
+update=false
 
 if [ "$update" = true ]; then
 
@@ -27,19 +27,15 @@ esearch -db sra -query "${text}" | efilter -mindate "${date_var}" | efetch -form
 
 count_after=$(wc -l < ../data/"${file_name}.txt" )
 
-echo "Updated ${file_name} , from ${count_before} to ${count_after} "
-
-elif [ "$update" = false ]; then 
+elif [ "$update" = false ]; then
 
 > ../data/"${file_name}.txt"
 
 esearch -db sra -query "${text}" | efetch -format runinfo | cut -d "," -f 1 | sed '1d' > ../data/"${file_name}.txt"
 
-echo "Created ${file_name}"
+else
 
-else 
-
-echo  "Unrecognised update status option"
+echo "Unrecognsied Update Status"
 
 fi
 
