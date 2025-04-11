@@ -75,14 +75,23 @@ Margaritifera margaritifera
 ```
 In order to run this script we needthe packages NCBI datasets and jq 
 ```
-sbatch check_refgens.sh
+sbatch check_target_species.sh
 ```
-This outputs two files:
+This outputs three files of interest:
 ```
+../data/mismatched_species.txt 
 ../data/refgen_species.tsv
 ../data/refgen_family.tsv
 ```
 The first is all the avaiable genome sequences and the second is all the available genome sequences for species in the same Family. Species and Families that are searched for but don't return any reults are described as None in the accession and assembly_level columns. 
+
+Any misattributations from one speices to another eg Arvicola terrestris to Arvicola amphibius appears here, but must be dealt with manually
+
+We can count see many species don't have sequenced genomes at any level with:
+```
+nano ../data/species_with_refgens.txt
+nano ../data/species_without_refgens.txt
+```
 
 It is important to note that target species not found are knwon unknowns, but members of the target species' family that don't have reference genomes are unknown unknowns. Entire Genuses could fit into this catagory and undermine our assumption that we have properly represented relatives to our targets. 
 
@@ -115,9 +124,10 @@ A rule of thumb is that it takes ... to downlaod ... genomes.
 This currently is split into two steps, the first is listing all the accessions for the genomes that we want to include. This checks against already downloaded and 
 processed genomes to prevent repeats incase this is being run as an update. 
 The .tsv chosen needs to be changed in the script directly. Eg to ../data/refgen_one_each.tsv
+This requires the NCBI datasets package
 ```
-nano get_accessions 
-sbatch get_accessions
+nano get_accessions.sh 
+sbatch get_accessions.sh
 ```
 Then those RefGen files are downloaded, extracted and converted into Sourmash signatures. Each downlaoded genome is deleted after it has been used to decrease redundentmemory usage. 
 Sourmash signatures (.sig) are hash tables of kmers and related metadata. They are much smaller than the inputed genomic infromation because, hashes are smaller than 
