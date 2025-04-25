@@ -1,0 +1,252 @@
+---
+title: "Lazarus R code"
+output: html_document
+date: "2025-04-25"
+---
+# Import the data and the names
+
+This section refomrattes the outpu.csv into the form we will use to generate analyssi and graphs 
+```{r}
+freshwater <- rbind(freshwater_2_all_samples, wsg_outputs_half)
+
+
+
+output_df <- select(freshwater, genome, intersect_bp, unique_intersect_bp, col2, col3, f_orig_query, f_match, f_unique_to_query, f_unique_weighted, filename, query_filename, query_bp, gather_result_rank)
+
+colnames(output_df) <- c("organism", "overlap", "unique_overlap", "p_query", "p_match", "f_orig_query", "f_match", "f_unique_to_query", "f_unique_weighted", "filename", "sample", "sample_size", "gather_result_rank")
+
+output_df <- output_df %>% filter(organism != "genome")
+
+output_df <- subset(output_df, !grepl("^GC", organism))
+
+output_df$overlap <- as.numeric(output_df$overlap)
+output_df$sample_size <- as.numeric(output_df$sample_size)
+output_df$f_match <- as.numeric(output_df$f_match)
+output_df$f_orig_query <- as.numeric(output_df$f_orig_query)
+output_df$gather_result_rank <- as.numeric(output_df$gather_result_rank)
+output_df$f_unique_to_query <- as.numeric(output_df$f_unique_to_query)
+output_df$f_unique_weighted <- as.numeric(output_df$f_unique_weighted)
+output_df$unique_overlap <- as.numeric(output_df$unique_overlap)
+output_df$p_query <- as.numeric(gsub("%", "", output_df$p_query))
+output_df$p_match <- as.numeric(gsub("%", "", output_df$p_match))
+output_df$sample <- stringr::str_extract(output_df$sample, "[A-Z]{3}[0-9]+")
+```
+
+```{r}
+refgen_one_each
+output_df
+```
+#Match the accessions to the names and families. 
+```{r}
+matched_rows <- pmap_dfr(refgen_one_each, function(accession, search, species, assembly_level) {
+  
+  matched <- output_df %>%
+    filter(str_detect(organism, fixed(accession))) %>%
+    mutate(
+      accession = accession,
+      search = search,
+      species = species,
+      assembly_level = assembly_level
+    )
+  
+  return(matched)
+})
+```
+Note that this removes the human control
+
+# Now we calculate the rough estimate of score.
+```{r}
+matched_rows <- matched_rows %>%
+  group_by(sample, search) %>%
+  mutate(score = unique_overlap / sum(unique_overlap, na.rm = TRUE)) %>%
+  ungroup()
+```
+
+```{r}
+matched_rows$ratio <- matched_rows$unique_overlap / matched_rows$overlap
+```
+
+```{r}
+matched_rows <- matched_rows %>%
+  group_by(sample) %>%
+  mutate(weight = unique_overlap / mean(unique_overlap, na.rm = TRUE)) %>%
+  ungroup()
+```
+
+```{r}
+acc <- SraAccList
+colnames(acc) <- c("sample")
+wsg_matched_rows <- matched_rows %>%
+  filter(sample %in% acc$sample)
+```
+
+```{r}
+complete_wsg_matched_rows <- wsg_matched_rows %>%
+  complete(sample, species, fill = list(score = NA))
+```
+
+```{r}
+targets_complete_wsg_matched_rows <- complete_wsg_matched_rows %>%
+  filter(species %in% target_species$species)
+```
+
+```{r}
+interesting_targets_complete_wsg_matched_rows <- targets_complete_wsg_matched_rows %>%
+  group_by(sample) %>%
+  filter(any(score > 0.2, na.rm = TRUE)) %>%
+  ungroup()
+```
+
+```{r}
+p1 <- ggplot(interesting_targets_complete_wsg_matched_rows, aes(x = sample, y = species, fill = score)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(
+    low = "white", high = "blue", na.value = "grey80",
+    limits = c(0, 1),  # Force 0–1 scale
+    name = "Score"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    panel.grid = element_blank()
+  ) +
+  labs(title = "Target species heatmap", x = "Sample", y = "Species") +
+   theme(axis.text.x = element_blank())
+
+p2 <- ggplot(interesting_targets_complete_wsg_matched_rows, aes(x = sample, y = species, fill = ratio)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(
+    low = "white", high = "blue", na.value = "grey80",
+    limits = c(0, 1),  # Force 0–1 scale
+    name = "Score"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    panel.grid = element_blank()
+  ) +
+  labs(title = "Target species heatmap", x = "Sample", y = "Species") +
+   theme(axis.text.x = element_blank())
+
+p3 <- ggplot(interesting_targets_complete_wsg_matched_rows, aes(x = sample, y = species, fill = weight)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(
+    low = "white", high = "blue", na.value = "grey80",
+    limits = c(0, 1),  # Force 0–1 scale
+    name = "Score"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    panel.grid = element_blank()
+  ) +
+  labs(title = "Target species heatmap", x = "Sample", y = "Species") +
+   theme(axis.text.x = element_blank())
+
+interesting_targets_complete_wsg_matched_rows$like <- interesting_targets_complete_wsg_matched_rows$ratio * interesting_targets_complete_wsg_matched_rows$score 
+
+p4 <- ggplot(interesting_targets_complete_wsg_matched_rows, aes(x = sample, y = species, fill = like)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(
+    low = "white", high = "blue", na.value = "grey80",  # Force 0–1 scale
+    name = "Like"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    panel.grid = element_blank()
+  ) +
+  labs(title = "Target species heatmap", x = "Sample", y = "Species") +
+   theme(axis.text.x = element_blank())
+
+```
+```{r}
+p1
+p2
+p3
+p4
+```
+```{r}
+
+```
+
+```{r}
+select_rows <- subset(matched_rows, matched_rows$unique_overlap > 4000)
+select_rows <- subset(select_rows, select_rows$score > 0.66)
+select_rows <- select_rows %>%
+  filter(species %in% target_species$species)
+select_rows <- subset(select_rows, select_rows$species != "Triturus cristatus")
+
+select_rows2 <- subset(matched_rows, matched_rows$score == 1)
+select_rows2 <- subset(select_rows2, select_rows2$score > 0.75)
+select_rows2 <- select_rows2 %>%
+  filter(species %in% target_species$species)
+select_rows2 <- subset(select_rows2, select_rows2$species != "Triturus cristatus")
+```
+
+```{r}
+library(ggplot2)
+p6 <- ggplot(select_rows, aes(x = sample, y = species, fill = score)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(
+    low = "white", high = "blue", na.value = "grey80",  # Force 0–1 scale
+    name = "Ratio"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    panel.grid = element_blank()
+  ) +
+  labs(title = "Select Results for Target species", x = "Sample", y = "Species") +
+   theme(axis.text.x = element_blank())
+p6
+```
+
+```{r}
+library(ggplot2)
+
+target_species <- rbind(target_species, "Anisus vortex") 
+
+target_last_samples_kraken_report <- last_samples_kraken_report %>%
+  filter(species %in% target_species$species)
+
+target_last_samples_kraken_report <- target_last_samples_kraken_report %>%
+  filter(sample %in% select_rows$sample)
+
+
+p6 <- ggplot(target_last_samples_kraken_report, aes(x = sample, y = species)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(
+    low = "white", high = "blue", na.value = "grey80",  # Force 0–1 scale
+    name = "Ratio"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    panel.grid = element_blank()
+  ) +
+  labs(title = "Kraken2 Results for Target species", x = "Sample", y = "Species") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p6
+```
+
+```{r}
+matched_select_rows <- select_rows  %>%
+  filter(sample %in% target_last_samples_kraken_report$sample)
+
+p6 <- ggplot(matched_select_rows, aes(x = sample, y = species, fill = score)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(
+    low = "white", high = "blue", na.value = "grey80",  # Force 0–1 scale
+    name = "Ratio"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    panel.grid = element_blank()
+  ) +
+  labs(title = "Search results of select sample", x = "Sample", y = "Species") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p6
+```
+
