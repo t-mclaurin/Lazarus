@@ -204,6 +204,7 @@ cat ../data/outputs/output_*.csv > your_name_for_the_output.csv
 ``` 
 
 ## Steps - R
+LazarusRcode.md is an R markdown file that takes the full output file and produces a heat map of results
 
 
 
