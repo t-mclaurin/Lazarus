@@ -6,10 +6,6 @@ reference material for target species and to the growing datasets available to s
 
 This work was undertaken as a Master's Project. The full transcirpt to the thesis can be found /here/
 
-Abstract:
-
-In short: Lazarus is a bioinformatics pipline capable of...
-
 
 ## Contents 
 
@@ -25,7 +21,7 @@ All of these are avialable via the bioconda channel of the conda software manage
 In chronological order of necessity:
 1. NCBI Datasets Command Line Interface
 2. jq - a json processor
-3. Entrez-direct - NCBI comamnd line interaction
+3. Entrez-direct - NCBI command line interaction
 4. sra-tools - tools and libraries for interacting with INSDC data
 
 # Tutorial
@@ -56,7 +52,7 @@ Lazarus requires 4 pieces of input to work
 
 ## Steps - Building a sourmash database
 
-Our sourmash database is made up genomic informaation form one of three sources: Species of interest, thier relatives and posotive controls. 
+Our sourmash database is made up genomic information from one of three sources: Species of interest, their relatives and positive controls. 
 The Sourmash gather function that we use in this search improves in sensitivity with genomic information from wider sources at it's disposale
 
 #### Finding publicly available genomic information
